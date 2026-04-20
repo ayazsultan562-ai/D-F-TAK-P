@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DÖF Takip Sistemi</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'JetBrains Mono', 'Fira Code', monospace; background: #F8F9FB; color: #1E293B; min-height: 100vh; }
+  input, select, textarea, button { font-family: 'DM Sans', sans-serif; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #F1F5F9; }
+  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .header { background: #fff; border-bottom: 1px solid #E2E8F0; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .logo { width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, #DC2626, #F59E0B); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #fff; box-shadow: 0 2px 8px rgba(220,38,38,0.25); }
+  .header-title { font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 700; color: #0F172A; letter-spacing: -0.02em; }
+  .header-sub { font-size: 11px; color: #94A3B8; letter-spacing: 0.05em; }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #16A34A; display: inline-block; animation: pulse 2s infinite; }
+
+  .tabs { display: flex; border-bottom: 1px solid #E2E8F0; background: #fff; }
+  .tab-btn { padding: 12px 24px; font-size: 13px; font-family: 'DM Sans', sans-serif; font-weight: 600; background: transparent; color: #94A3B8; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s; }
+  .tab-btn.active { background: #F8F9FB; color: #0F172A; border-bottom-color: #D97706; }
+
+  .content { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .kpi-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px 20px; position: relative; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .kpi-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .kpi-label { font-size: 11px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .kpi-value { font-size: 32px; font-weight: 700; line-height: 1; }
+  .kpi-icon { font-size: 24px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .card { background: #fff; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card-title { font-size: 13px; font-weight: 600; color: #64748B; margin-bottom: 16px; font-family: 'DM Sans', sans-serif; }
+
+  .risk-row { margin-bottom: 12px; }
+  .risk-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+  .risk-track { background: #F1F5F9; border-radius: 6px; height: 24px; overflow: hidden; }
+  .risk-fill { height: 100%; border-radius: 6px; transition: width 0.5s; }
+
+  .source-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .source-card { background: #F8F9FB; border-radius: 10px; padding: 14px 16px; border: 1px solid #E2E8F0; text-align: center; }
+  .source-icon { font-size: 28px; margin-bottom: 6px; }
+  .source-count { font-size: 22px; font-weight: 700; color: #0F172A; }
+  .source-name { font-size: 11px; color: #94A3B8; margin-top: 2px; }
+
+  .alert-box { margin-top: 16px; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; }
+  .alert-title { font-size: 14px; font-weight: 700; color: #DC2626; font-family: 'DM Sans', sans-serif; }
+  .alert-detail { font-size: 12px; color: #64748B; margin-top: 2px; }
+  .alert-icon { font-size: 28px; animation: pulse 1.5s infinite; }
+
+  .filters { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .filter-select { background: #fff; color: #1E293B; border: 1px solid #CBD5E1; border-radius: 8px; padding: 8px 12px; font-size: 12px; cursor: pointer; min-width: 130px; }
+  .btn-new { background: linear-gradient(135deg, #F59E0B, #D97706); color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 6px rgba(217,119,6,0.3); }
+  .spacer { flex: 1; }
+
+  .form-box { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 12px; padding: 20px; margin-bottom: 16px; display: none; }
+  .form-box.show { display: block; }
+  .form-title { font-size: 14px; font-weight: 700; color: #92400E; margin-bottom: 14px; font-family: 'DM Sans', sans-serif; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .form-label { font-size: 11px; color: #64748B; display: block; margin-bottom: 4px; }
+  .form-input, .form-select { width: 100%; background: #fff; color: #1E293B; border: 1px solid #CBD5E1; border-radius: 6px; padding: 8px 10px; font-size: 12px; }
+  .form-textarea { width: 100%; background: #fff; color: #1E293B; border: 1px solid #CBD5E1; border-radius: 6px; padding: 8px 10px; font-size: 12px; resize: vertical; }
+  .btn-save { background: #16A34A; color: #fff; border: none; border-radius: 8px; padding: 8px 20px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-save:disabled { background: #CBD5E1; cursor: default; }
+  .btn-cancel { background: #E2E8F0; color: #64748B; border: none; border-radius: 8px; padding: 8px 20px; font-size: 13px; cursor: pointer; }
+
+  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead tr { background: #F8FAFC; }
+  th { padding: 10px 12px; text-align: left; color: #64748B; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #E2E8F0; white-space: nowrap; }
+  td { padding: 10px 12px; }
+  tbody tr:nth-child(even) { background: #F8FAFC; }
+  tbody tr:nth-child(odd) { background: #fff; }
+  tbody tr { border-bottom: 1px solid #F1F5F9; }
+  .td-id { font-weight: 600; color: #0F172A; white-space: nowrap; }
+  .td-muted { color: #64748B; white-space: nowrap; }
+  .td-name { color: #1E293B; font-weight: 500; }
+  .td-desc { color: #64748B; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; }
+  .source-badge { background: #F1F5F9; padding: 3px 8px; border-radius: 6px; font-size: 11px; color: #334155; }
+  .btn-close-dof { background: #DCFCE7; color: #16A34A; border: 1px solid #BBF7D0; border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-weight: 600; }
+  .record-count { margin-top: 10px; font-size: 11px; color: #94A3B8; text-align: right; }
+
+  .perf-desc { font-size: 13px; color: #64748B; margin-bottom: 20px; font-family: 'DM Sans', sans-serif; }
+  .perf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .perf-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; position: relative; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .perf-bar-top { position: absolute; top: 0; left: 0; height: 3px; transition: width 0.5s; }
+  .perf-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .perf-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
+  .perf-name { font-size: 14px; font-weight: 700; color: #0F172A; font-family: 'DM Sans', sans-serif; }
+  .perf-sub { font-size: 11px; color: #94A3B8; }
+  .perf-score { font-size: 28px; font-weight: 700; line-height: 1; }
+  .perf-score-label { font-size: 10px; color: #94A3B8; }
+  .perf-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .perf-stat { background: #F8F9FB; border-radius: 8px; padding: 8px 6px; text-align: center; border: 1px solid #E2E8F0; }
+  .perf-stat-val { font-size: 18px; font-weight: 700; }
+  .perf-stat-lbl { font-size: 9px; color: #94A3B8; margin-top: 2px; }
+  .perf-minibar { margin-top: 12px; display: flex; gap: 2px; height: 6px; border-radius: 3px; overflow: hidden; background: #F1F5F9; }
+
+  .ranking-wrap { margin-top: 24px; background: #fff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .ranking-title { padding: 14px 20px; border-bottom: 1px solid #E2E8F0; font-size: 13px; font-weight: 600; color: #64748B; font-family: 'DM Sans', sans-serif; }
+
+  @media (max-width: 768px) {
+    .two-col { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .perf-grid { grid-template-columns: 1fr; }
+    .filters { flex-direction: column; }
+    .filter-select { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div style="display:flex;align-items:center;gap:14px">
+    <div class="logo">İG</div>
+    <div>
+      <div class="header-title">DÖF Takip Sistemi</div>
+      <div class="header-sub">Düzeltici &amp; Önleyici Faaliyet Yönetimi</div>
+    </div>
+  </div>
+  <div style="font-size:11px;color:#94A3B8;display:flex;align-items:center;gap:8px">
+    <span class="live-dot"></span>
+    Bugün: <span id="todayDate"></span>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
+  <button class="tab-btn" data-tab="table">📋 DÖF Listesi</button>
+  <button class="tab-btn" data-tab="performance">👤 Performans</button>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- DASHBOARD -->
+  <div id="sec-dashboard" class="section active"></div>
+
+  <!-- TABLE -->
+  <div id="sec-table" class="section"></div>
+
+  <!-- PERFORMANCE -->
+  <div id="sec-performance" class="section"></div>
+
+</div>
+
+<script>
+const TODAY = new Date().toISOString().slice(0, 10);
+document.getElementById('todayDate').textContent = TODAY;
+
+const riskColors = { "Yüksek": "#DC2626", "Orta": "#D97706", "Düşük": "#16A34A" };
+const statusColors = { "Açık": "#2563EB", "Gecikti": "#DC2626", "Kapalı": "#16A34A" };
+const sourceIcons = { "Denetim": "🔍", "Ramak Kala": "⚠️", "Olay": "🔴", "Eğitim": "📚" };
+
+let data = [
+  { id:"DÖF-2026-001", openDate:"2026-03-01", source:"Denetim", dept:"Üretim", responsible:"Ahmet Yılmaz", desc:"Forklift operatörü emniyet kemeri takmıyor", risk:"Yüksek", dueDate:"2026-03-15", status:"Kapalı", closeDate:"2026-03-14", rootCause:"Eğitim eksikliği", action:"Operatörlere yeniden eğitim verildi" },
+  { id:"DÖF-2026-002", openDate:"2026-03-05", source:"Ramak Kala", dept:"Depo", responsible:"Mehmet Kaya", desc:"Raf sisteminde çatlak tespit edildi", risk:"Yüksek", dueDate:"2026-03-20", status:"Açık", closeDate:"", rootCause:"", action:"" },
+  { id:"DÖF-2026-003", openDate:"2026-03-10", source:"Olay", dept:"Bakım", responsible:"Ali Demir", desc:"Elektrik panosunda kısa devre", risk:"Yüksek", dueDate:"2026-03-25", status:"Kapalı", closeDate:"2026-03-28", rootCause:"Bakım periyodu aşılmış", action:"Bakım planı güncellendi" },
+  { id:"DÖF-2026-004", openDate:"2026-03-12", source:"Eğitim", dept:"Üretim", responsible:"Fatma Şahin", desc:"KKD kullanım eğitimi tamamlanmadı", risk:"Orta", dueDate:"2026-04-01", status:"Kapalı", closeDate:"2026-03-30", rootCause:"Planlama hatası", action:"Eğitim takvimi revize edildi" },
+  { id:"DÖF-2026-005", openDate:"2026-03-18", source:"Denetim", dept:"Lojistik", responsible:"Ahmet Yılmaz", desc:"Acil çıkış yolu tıkanmış", risk:"Yüksek", dueDate:"2026-03-28", status:"Açık", closeDate:"", rootCause:"", action:"" },
+  { id:"DÖF-2026-006", openDate:"2026-03-20", source:"Ramak Kala", dept:"Üretim", responsible:"Mehmet Kaya", desc:"Kaynak atölyesinde gaz kaçağı şüphesi", risk:"Yüksek", dueDate:"2026-04-05", status:"Açık", closeDate:"", rootCause:"", action:"" },
+  { id:"DÖF-2026-007", openDate:"2026-03-22", source:"Olay", dept:"Depo", responsible:"Ali Demir", desc:"Yükleme sırasında palet devrildi", risk:"Orta", dueDate:"2026-04-10", status:"Açık", closeDate:"", rootCause:"", action:"" },
+  { id:"DÖF-2026-008", openDate:"2026-04-01", source:"Denetim", dept:"Bakım", responsible:"Fatma Şahin", desc:"MSDS dosyaları güncel değil", risk:"Düşük", dueDate:"2026-04-15", status:"Kapalı", closeDate:"2026-04-12", rootCause:"Takip eksikliği", action:"Dijital MSDS sistemi kuruldu" },
+  { id:"DÖF-2026-009", openDate:"2026-04-05", source:"Eğitim", dept:"Lojistik", responsible:"Ahmet Yılmaz", desc:"İlk yardım eğitimi sertifikaları süresi dolmuş", risk:"Orta", dueDate:"2026-04-20", status:"Açık", closeDate:"", rootCause:"", action:"" },
+  { id:"DÖF-2026-010", openDate:"2026-04-08", source:"Ramak Kala", dept:"Üretim", responsible:"Mehmet Kaya", desc:"Pres makinesinde koruyucu kapak eksik", risk:"Yüksek", dueDate:"2026-04-18", status:"Açık", closeDate:"", rootCause:"", action:"" },
+  { id:"DÖF-2026-011", openDate:"2026-04-10", source:"Denetim", dept:"Depo", responsible:"Ali Demir", desc:"Kimyasal depolama alanı işaretlenmemiş", risk:"Orta", dueDate:"2026-04-25", status:"Açık", closeDate:"", rootCause:"", action:"" },
+  { id:"DÖF-2026-012", openDate:"2026-04-12", source:"Olay", dept:"Bakım", responsible:"Fatma Şahin", desc:"Yüksekte çalışma izni alınmadan işe başlanmış", risk:"Yüksek", dueDate:"2026-04-22", status:"Açık", closeDate:"", rootCause:"", action:"" },
+];
+
+function daysDiff(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); }
+function getAutoStatus(d) {
+  if (d.status === "Kapalı") return "Kapalı";
+  if (new Date(d.dueDate) < new Date(TODAY)) return "Gecikti";
+  return "Açık";
+}
+function getDelay(d) {
+  const s = getAutoStatus(d);
+  if (s === "Gecikti") return daysDiff(d.dueDate, TODAY);
+  if (s === "Kapalı" && d.closeDate && new Date(d.closeDate) > new Date(d.dueDate)) return daysDiff(d.dueDate, d.closeDate);
+  return 0;
+}
+function processed() { return data.map(d => ({...d, autoStatus: getAutoStatus(d), delay: getDelay(d)})); }
+function unique(arr, key) { return [...new Set(arr.map(d => d[key]))]; }
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function badgeHTML(text, color) {
+  return `<span class="badge" style="background:${color}15;color:${color};border:1px solid ${color}33">${esc(text)}</span>`;
+}
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('sec-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+function render() {
+  const p = processed();
+  const stats = {
+    total: p.length,
+    open: p.filter(d => d.autoStatus === "Açık").length,
+    late: p.filter(d => d.autoStatus === "Gecikti").length,
+    closed: p.filter(d => d.autoStatus === "Kapalı").length,
+    highRisk: p.filter(d => d.risk === "Yüksek").length,
+    midRisk: p.filter(d => d.risk === "Orta").length,
+    lowRisk: p.filter(d => d.risk === "Düşük").length,
+  };
+  const people = unique(data, 'responsible');
+  const depts = unique(data, 'dept');
+  const sources = ["Denetim","Ramak Kala","Olay","Eğitim"];
+
+  // ========== DASHBOARD ==========
+  const kpis = [
+    { label:"Toplam DÖF", value:stats.total, color:"#7C3AED", icon:"📁" },
+    { label:"Açık", value:stats.open, color:"#2563EB", icon:"🔵" },
+    { label:"Geciken", value:stats.late, color:"#DC2626", icon:"🔴" },
+    { label:"Kapalı", value:stats.closed, color:"#16A34A", icon:"✅" },
+  ];
+
+  const riskBars = [
+    { label:"Yüksek", value:stats.highRisk, color:"#DC2626" },
+    { label:"Orta", value:stats.midRisk, color:"#D97706" },
+    { label:"Düşük", value:stats.lowRisk, color:"#16A34A" },
+  ];
+
+  const lateItems = p.filter(d => d.autoStatus === "Gecikti");
+
+  let dashHTML = `<div class="kpi-grid">${kpis.map(k => `
+    <div class="kpi-card">
+      <div class="kpi-bar" style="background:${k.color}"></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="kpi-label">${k.label}</div>
+          <div class="kpi-value" style="color:${k.color}">${k.value}</div>
+        </div>
+        <span class="kpi-icon">${k.icon}</span>
+      </div>
+    </div>`).join('')}</div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Risk Seviyesi Dağılımı</div>
+      ${riskBars.map(r => {
+        const pct = stats.total > 0 ? Math.round(r.value / stats.total * 100) : 0;
+        return `<div class="risk-row">
+          <div class="risk-header">
+            <span style="color:${r.color};font-weight:600">${r.label}</span>
+            <span style="color:#94A3B8">${r.value} (${pct}%)</span>
+          </div>
+          <div class="risk-track"><div class="risk-fill" style="width:${pct}%;background:linear-gradient(90deg,${r.color}99,${r.color})"></div></div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="card">
+      <div class="card-title">Kaynak Dağılımı</div>
+      <div class="source-grid">
+        ${sources.map(s => {
+          const cnt = p.filter(d => d.source === s).length;
+          return `<div class="source-card">
+            <div class="source-icon">${sourceIcons[s]}</div>
+            <div class="source-count">${cnt}</div>
+            <div class="source-name">${s}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+
+  if (lateItems.length > 0) {
+    dashHTML += `<div class="alert-box">
+      <span class="alert-icon">🚨</span>
+      <div>
+        <div class="alert-title">${lateItems.length} adet DÖF gecikmiş durumda!</div>
+        <div class="alert-detail">${lateItems.map(d => `${d.id} (${d.responsible}, ${d.delay} gün)`).join(' · ')}</div>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('sec-dashboard').innerHTML = dashHTML;
+
+  // ========== TABLE ==========
+  let tableHTML = `
+  <div class="filters">
+    <select class="filter-select" id="fPerson"><option value="">Tüm Kişiler</option>${people.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('')}</select>
+    <select class="filter-select" id="fDept"><option value="">Tüm Departmanlar</option>${depts.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('')}</select>
+    <select class="filter-select" id="fRisk"><option value="">Tüm Riskler</option><option>Yüksek</option><option>Orta</option><option>Düşük</option></select>
+    <select class="filter-select" id="fSource"><option value="">Tüm Kaynaklar</option>${sources.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
+    <select class="filter-select" id="fStatus"><option value="">Tüm Durumlar</option><option>Açık</option><option>Gecikti</option><option>Kapalı</option></select>
+    <div class="spacer"></div>
+    <button class="btn-new" id="btnToggleForm">+ Yeni DÖF</button>
+  </div>
+
+  <div class="form-box" id="formBox">
+    <div class="form-title">Yeni DÖF Kaydı</div>
+    <div class="form-grid">
+      <div><label class="form-label">Sorumlu Kişi</label><input class="form-input" id="frmResp" type="text"></div>
+      <div><label class="form-label">Departman</label><select class="form-select" id="frmDept">${depts.map(d=>`<option>${esc(d)}</option>`).join('')}</select></div>
+      <div><label class="form-label">Kaynak</label><select class="form-select" id="frmSource">${sources.map(s=>`<option>${s}</option>`).join('')}</select></div>
+      <div><label class="form-label">Risk Seviyesi</label><select class="form-select" id="frmRisk"><option>Orta</option><option>Yüksek</option><option>Düşük</option></select></div>
+      <div><label class="form-label">Termin Tarihi</label><input class="form-input" id="frmDue" type="date"></div>
+    </div>
+    <div style="margin-top:12px"><label class="form-label">Açıklama</label><textarea class="form-textarea" id="frmDesc" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn-save" id="btnSave">Kaydet</button>
+      <button class="btn-cancel" id="btnCancel">İptal</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>DÖF No</th><th>Tarih</th><th>Kaynak</th><th>Dept.</th><th>Sorumlu</th><th>Açıklama</th><th>Risk</th><th>Termin</th><th>Durum</th><th>Gecikme</th><th>İşlem</th>
+      </tr></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+  <div class="record-count" id="recordCount"></div>`;
+
+  document.getElementById('sec-table').innerHTML = tableHTML;
+  renderTableRows();
+
+  // Bind filter events
+  ['fPerson','fDept','fRisk','fSource','fStatus'].forEach(id => {
+    document.getElementById(id).addEventListener('change', renderTableRows);
+  });
+
+  document.getElementById('btnToggleForm').addEventListener('click', () => {
+    document.getElementById('formBox').classList.toggle('show');
+  });
+  document.getElementById('btnCancel').addEventListener('click', () => {
+    document.getElementById('formBox').classList.remove('show');
+  });
+  document.getElementById('btnSave').addEventListener('click', () => {
+    const resp = document.getElementById('frmResp').value.trim();
+    const desc = document.getElementById('frmDesc').value.trim();
+    const due = document.getElementById('frmDue').value;
+    if (!resp || !desc || !due) { alert('Sorumlu, açıklama ve termin tarihi zorunludur.'); return; }
+    const nextNum = data.length + 1;
+    data.push({
+      id: `DÖF-2026-${String(nextNum).padStart(3,'0')}`,
+      openDate: TODAY,
+      source: document.getElementById('frmSource').value,
+      dept: document.getElementById('frmDept').value,
+      responsible: resp,
+      desc: desc,
+      risk: document.getElementById('frmRisk').value,
+      dueDate: due,
+      status: "Açık",
+      closeDate: "",
+      rootCause: "",
+      action: ""
+    });
+    render();
+  });
+
+  // ========== PERFORMANCE ==========
+  const perfMap = {};
+  people.forEach(per => {
+    const items = p.filter(d => d.responsible === per);
+    const total = items.length;
+    const closed = items.filter(d => d.autoStatus === "Kapalı").length;
+    const onTime = items.filter(d => d.autoStatus === "Kapalı" && d.delay === 0).length;
+    const lateClose = items.filter(d => d.autoStatus === "Kapalı" && d.delay > 0).length;
+    const lateOpen = items.filter(d => d.autoStatus === "Gecikti").length;
+    const openCount = total - closed - lateOpen;
+    const score = total > 0 ? Math.max(0, Math.round(((onTime * 10 + lateClose * 5) / (total * 10)) * 100)) : 0;
+    perfMap[per] = { total, closed, onTime, lateClose, lateOpen, openCount, score };
+  });
+
+  let perfHTML = `<div class="perf-desc">Performans puanı: Zamanında kapanan = 10 puan, gecikmeli kapanan = 5 puan, açık/geciken = 0 puan. Skor = (kazanılan / maksimum) × 100</div>
+  <div class="perf-grid">${people.map(per => {
+    const pf = perfMap[per];
+    const sc = pf.score >= 70 ? "#16A34A" : pf.score >= 40 ? "#D97706" : "#DC2626";
+    const statItems = [
+      { label:"Zamanında", val:pf.onTime, color:"#16A34A" },
+      { label:"Gecikmeli", val:pf.lateClose, color:"#D97706" },
+      { label:"Açık", val:pf.openCount, color:"#2563EB" },
+      { label:"Geciken", val:pf.lateOpen, color:"#DC2626" },
+    ];
+    const barTotal = pf.onTime + pf.lateClose + (pf.total - pf.closed);
+    return `<div class="perf-card">
+      <div class="perf-bar-top" style="width:${pf.score}%;background:${sc}"></div>
+      <div class="perf-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="perf-avatar" style="background:${sc}15;border:2px solid ${sc};color:${sc}">${per.charAt(0)}</div>
+          <div>
+            <div class="perf-name">${esc(per)}</div>
+            <div class="perf-sub">${pf.total} DÖF atanmış</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="perf-score" style="color:${sc}">${pf.score}</div>
+          <div class="perf-score-label">PUAN</div>
+        </div>
+      </div>
+      <div class="perf-stats">${statItems.map(s => `
+        <div class="perf-stat">
+          <div class="perf-stat-val" style="color:${s.color}">${s.val}</div>
+          <div class="perf-stat-lbl">${s.label}</div>
+        </div>`).join('')}
+      </div>
+      <div class="perf-minibar">
+        ${pf.onTime > 0 ? `<div style="flex:${pf.onTime};background:#16A34A"></div>` : ''}
+        ${pf.lateClose > 0 ? `<div style="flex:${pf.lateClose};background:#D97706"></div>` : ''}
+        ${(pf.total - pf.closed) > 0 ? `<div style="flex:${pf.total - pf.closed};background:#2563EB"></div>` : ''}
+      </div>
+    </div>`;
+  }).join('')}</div>
+
+  <div class="ranking-wrap">
+    <div class="ranking-title">Performans Sıralaması</div>
+    <table><thead><tr style="background:#F8FAFC">
+      <th>Sıra</th><th>Kişi</th><th>Toplam</th><th>Zamanında</th><th>Gecikmeli</th><th>Açık</th><th>Geciken</th><th>Puan</th>
+    </tr></thead><tbody>
+    ${[...people].sort((a,b) => perfMap[b].score - perfMap[a].score).map((per, i) => {
+      const pf = perfMap[per];
+      const sc = pf.score >= 70 ? "#16A34A" : pf.score >= 40 ? "#D97706" : "#DC2626";
+      return `<tr style="border-bottom:1px solid #F1F5F9">
+        <td style="font-weight:700;color:${i===0?'#D97706':'#94A3B8'}">${i+1}</td>
+        <td style="font-weight:600;color:#0F172A">${esc(per)}</td>
+        <td style="color:#64748B">${pf.total}</td>
+        <td style="color:#16A34A">${pf.onTime}</td>
+        <td style="color:#D97706">${pf.lateClose}</td>
+        <td style="color:#2563EB">${pf.openCount}</td>
+        <td style="color:#DC2626">${pf.lateOpen}</td>
+        <td>${badgeHTML(pf.score, sc)}</td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>
+  </div>`;
+
+  document.getElementById('sec-performance').innerHTML = perfHTML;
+}
+
+function renderTableRows() {
+  const p = processed();
+  const fp = (document.getElementById('fPerson') || {}).value || '';
+  const fd = (document.getElementById('fDept') || {}).value || '';
+  const fr = (document.getElementById('fRisk') || {}).value || '';
+  const fs = (document.getElementById('fSource') || {}).value || '';
+  const fst = (document.getElementById('fStatus') || {}).value || '';
+
+  const filtered = p.filter(d =>
+    (!fp || d.responsible === fp) &&
+    (!fd || d.dept === fd) &&
+    (!fr || d.risk === fr) &&
+    (!fs || d.source === fs) &&
+    (!fst || d.autoStatus === fst)
+  );
+
+  const tbody = document.getElementById('tableBody');
+  if (!tbody) return;
+
+  tbody.innerHTML = filtered.map(d => `
+    <tr>
+      <td class="td-id">${esc(d.id)}</td>
+      <td class="td-muted">${d.openDate}</td>
+      <td><span class="source-badge">${sourceIcons[d.source]} ${d.source}</span></td>
+      <td class="td-muted">${esc(d.dept)}</td>
+      <td class="td-name">${esc(d.responsible)}</td>
+      <td class="td-desc" title="${esc(d.desc)}">${esc(d.desc)}</td>
+      <td>${badgeHTML(d.risk, riskColors[d.risk])}</td>
+      <td class="td-muted">${d.dueDate}</td>
+      <td>${badgeHTML(d.autoStatus, statusColors[d.autoStatus])}</td>
+      <td style="color:${d.delay > 0 ? '#DC2626' : '#CBD5E1'};font-weight:${d.delay > 0 ? 700 : 400}">${d.delay > 0 ? d.delay + ' gün' : '—'}</td>
+      <td>${d.autoStatus !== "Kapalı" ? `<button class="btn-close-dof" onclick="closeDof('${d.id}')">Kapat</button>` : ''}</td>
+    </tr>
+  `).join('');
+
+  const rc = document.getElementById('recordCount');
+  if (rc) rc.textContent = `${filtered.length} / ${p.length} kayıt gösteriliyor`;
+}
+
+function closeDof(id) {
+  data = data.map(d => d.id === id ? {...d, status:"Kapalı", closeDate: TODAY} : d);
+  render();
+  // Re-activate table tab
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelector('[data-tab="table"]').classList.add('active');
+  document.getElementById('sec-table').classList.add('active');
+}
+
+render();
+</script>
+</body>
+</html>
